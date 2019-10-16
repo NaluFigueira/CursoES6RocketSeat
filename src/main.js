@@ -1,51 +1,96 @@
-import axios from 'axios';
+import api from './api';
 
-// import ClasseUsuario,{idade as IdadeUsuario} from './functions';
+class App{
+  constructor(){
+    this.repositories = [];
 
-// ClasseUsuario.info();
+    this.formElement = document.querySelector("form#repo-form");
+    this.ulElement = document.querySelector("ul#repo-list");
+    this.inputElement = document.querySelector("input#repo-name");
+    
+    this.handleSubmit();
+    this.render()
+  }
 
-// const h4Element = document.querySelector('h4#idade');
-// const h4Text = document.createTextNode("A idade é "+IdadeUsuario);
-// h4Element.append(h4Text);
+  handleSubmit(){
+    this.formElement.onsubmit = event => this.addRepository(event);
+  }
 
-// const delay = () => new Promise(resolve => setTimeout(resolve('ok'), 1000));
+  setLoading(loading = true){
+    if(loading){
+      let loadingElement = document.createElement('span');
+      loadingElement.appendChild(document.createTextNode('Carregando...'));
+      loadingElement.setAttribute('id','loading');
 
-// async function umPorSegundo() {
-//  try {
-//    console.log(await delay());
-//    console.log(await delay());
-//    console.log(await delay());
-   
-//  } catch (error) {
-//    console.log(error);
-//  }
-// }
+      this.formElement.appendChild(loadingElement);
+    } else {
+      document.getElementById('loading').remove();
+    }
 
-// umPorSegundo();
+  }
 
-// async function getUserFromGithub(user) {
-//   try {
-//     const response = await axios.get(`https://api.github.com/users/${user}`);
-//     console.log(response.data);
-//   } catch (error) {
-//     console.log('Usuário não existe');
-//   }
-//  }
-//  getUserFromGithub('diego3g');
-//  getUserFromGithub('diego3g124123');
- 
-// class Github {
-//   static async getRepositories(repo) {
-//     try {
-//       const response = await axios.get(`https://api.github.com/repos/${repo}`);
-//       console.log(response.data);
-//     } catch (error) {
-//       console.log('Repositório não existe');
-//     }
-//   }
-//  }
-//  Github.getRepositories('rocketseat/rocketseat.com.br');
-//  Github.getRepositories('rocketseat/dslkvmskv');
+  async addRepository(event){
+    event.preventDefault();
 
-const buscaUsuario = async usuario => console.log(await axios.get(`https://api.github.com/users/${usuario}`));
- buscaUsuario('diego3g');
+    const nameRepo = this.inputElement.value;
+    
+    if(nameRepo.length === 0)
+      return;
+
+    this.setLoading();
+    try {
+      const response = await api.get(`/repos/${nameRepo}`);
+      
+      const {name,description,html_url, owner:{avatar_url}} = response.data;
+  
+      this.repositories.push({
+        name,
+        description,
+        image_url:avatar_url,
+        url:html_url
+      });
+      
+      this.inputElement.value = "";
+  
+      this.render();
+      
+    } catch (error) {
+        alert("Usuário/Repositório não encontrado!")
+    }
+
+    this.setLoading(false);
+  }
+
+  renderLi(repository){
+    let liElement = document.createElement("li");
+      
+    let imgElement = document.createElement("img");
+    imgElement.setAttribute("src",repository.image_url);
+      
+    let strongElement = document.createElement("strong");
+    strongElement.appendChild(document.createTextNode(repository.name));
+
+    let pElement = document.createElement("p");
+    pElement.appendChild(document.createTextNode(repository.description));
+
+    let accessElement = document.createElement("a");
+    accessElement.setAttribute("href",repository.url);
+    accessElement.appendChild(document.createTextNode("Accessar"));
+
+    liElement.appendChild(imgElement);
+    liElement.appendChild(strongElement);
+    liElement.appendChild(pElement);
+    liElement.appendChild(accessElement);
+
+    this.ulElement.appendChild(liElement);
+  }
+
+  render(){
+    this.ulElement.innerHTML = '';
+    this.repositories.forEach(repository => {
+      this.renderLi(repository);
+    })
+  }
+}
+
+new App();
